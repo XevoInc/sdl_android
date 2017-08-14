@@ -23,8 +23,10 @@ import com.smartdevicelink.proxy.rpc.PermissionItem;
 import com.smartdevicelink.proxy.rpc.PresetBankCapabilities;
 import com.smartdevicelink.proxy.rpc.ScreenParams;
 import com.smartdevicelink.proxy.rpc.SdlMsgVersion;
+import com.smartdevicelink.proxy.rpc.SendHapticData;
 import com.smartdevicelink.proxy.rpc.SoftButton;
 import com.smartdevicelink.proxy.rpc.SoftButtonCapabilities;
+import com.smartdevicelink.proxy.rpc.SpatialParams;
 import com.smartdevicelink.proxy.rpc.StartTime;
 import com.smartdevicelink.proxy.rpc.SystemCapability;
 import com.smartdevicelink.proxy.rpc.TTSChunk;
@@ -214,7 +216,9 @@ public class Test {
 	public static final VideoStreamingCodec            GENERAL_VIDEOSTREAMINGCODEC            = VideoStreamingCodec.H264;
 	public static final VideoStreamingCapability       GENERAL_VIDEOSTREAMINGCAPABILITY       = new VideoStreamingCapability();
 	public static final VideoStreamingFormat           GENERAL_VIDEOSTREAMINGFORMAT           = new VideoStreamingFormat();
-	
+	public static final SpatialParams				   GENERAL_SPATIALPARAM					  = new SpatialParams();
+	public static final SendHapticData				   GENERAL_SENDHAPTICDATA			      = new SendHapticData();
+
 	public static final List<Long>                      GENERAL_LONG_LIST                      = Arrays.asList(new Long[]{ 1L, 2L });
 	public static final List<Turn>                      GENERAL_TURN_LIST                      = new ArrayList<Turn>();
 	public static final List<Choice>                    GENERAL_CHOICE_LIST                    = new ArrayList<Choice>();
@@ -243,6 +247,7 @@ public class Test {
 	public static final List<SoftButtonCapabilities>    GENERAL_SOFTBUTTONCAPABILITIES_LIST    = new ArrayList<SoftButtonCapabilities>(1);
 	public static final List<AudioPassThruCapabilities> GENERAL_AUDIOPASSTHRUCAPABILITIES_LIST = new ArrayList<AudioPassThruCapabilities>(1);
 	public static final List<VideoStreamingFormat>      GENERAL_VIDEOSTREAMINGFORMAT_LIST      = new ArrayList<VideoStreamingFormat>(2);
+	public static final List<SpatialParams> 			GENERAL_SPATIALPARAMS_LIST			   = new ArrayList<>(2);
 	
 	public static final JSONArray  JSON_TURNS                     = new JSONArray();
 	public static final JSONArray  JSON_CHOICES                   = new JSONArray();		
@@ -259,6 +264,7 @@ public class Test {
 	public static final JSONArray  JSON_BUTTONCAPABILITIES        = new JSONArray();
 	public static final JSONArray  JSON_SOFTBUTTONCAPABILITIES    = new JSONArray();
 	public static final JSONArray  JSON_AUDIOPASSTHRUCAPABILITIES = new JSONArray();
+	public static final JSONArray  JSON_SPATIALPARAMS			  = new JSONArray();
 	
 	public static final JSONObject JSON_TURN                      = new JSONObject();
 	public static final JSONObject JSON_IMAGE                     = new JSONObject();
@@ -482,6 +488,17 @@ public class Test {
 		GENERAL_VIDEOSTREAMINGCAPABILITY.setMaxBitrate(GENERAL_INT);
 		GENERAL_VIDEOSTREAMINGCAPABILITY.setPreferredResolution(GENERAL_IMAGERESOLUTION);
 		GENERAL_VIDEOSTREAMINGCAPABILITY.setSupportedFormats(GENERAL_VIDEOSTREAMINGFORMAT_LIST);
+
+		GENERAL_SPATIALPARAM.setId(GENERAL_INT);
+		GENERAL_SPATIALPARAM.setX(GENERAL_DOUBLE);
+		GENERAL_SPATIALPARAM.setY(GENERAL_DOUBLE);
+		GENERAL_SPATIALPARAM.setWidth(GENERAL_DOUBLE);
+		GENERAL_SPATIALPARAM.setHeight(GENERAL_DOUBLE);
+
+		GENERAL_SPATIALPARAMS_LIST.add(GENERAL_SPATIALPARAM);
+		GENERAL_SPATIALPARAMS_LIST.add(GENERAL_SPATIALPARAM);
+
+		GENERAL_SENDHAPTICDATA.setSpatialParams(GENERAL_SPATIALPARAMS_LIST);
         
 		try {	
 			JSON_HMIPERMISSIONS.put(HMIPermissions.KEY_ALLOWED, GENERAL_HMILEVEL_LIST);
@@ -597,6 +614,15 @@ public class Test {
 			jsonButton.put(AudioPassThruCapabilities.KEY_BITS_PER_SAMPLE, GENERAL_BITSPERSAMPLE);
 			jsonButton.put(AudioPassThruCapabilities.KEY_SAMPLING_RATE, GENERAL_SAMPLINGRATE);
 			JSON_AUDIOPASSTHRUCAPABILITIES.put(jsonButton);
+
+			JSONObject jsonSpatialParams = new JSONObject();
+			jsonSpatialParams.put(SpatialParams.KEY_ID, GENERAL_INT);
+			jsonSpatialParams.put(SpatialParams.KEY_X, GENERAL_DOUBLE);
+			jsonSpatialParams.put(SpatialParams.KEY_Y, GENERAL_DOUBLE);
+			jsonSpatialParams.put(SpatialParams.KEY_WIDTH, GENERAL_DOUBLE);
+			jsonSpatialParams.put(SpatialParams.KEY_HEIGHT, GENERAL_DOUBLE);
+			JSON_SPATIALPARAMS.put(jsonSpatialParams);
+			JSON_SPATIALPARAMS.put(jsonSpatialParams);
 			
 			JSON_TEXTFIELD.put(TextField.KEY_CHARACTER_SET, CharacterSet.CID1SET);
 			JSON_TEXTFIELD.put(TextField.KEY_NAME, TextFieldName.ETA);

@@ -1,0 +1,28 @@
+{
+  "request":{
+    "name":"SendHapticData",
+    "correlationID":191,
+    "parameters":{
+      "hapticSpatialData" : [
+        {
+          "id" : 2000,
+          "x" : 150.0,
+          "y" : 160.0,
+          "width" : 20.0,
+          "height" : 30.0
+        },
+        {
+          "id" : 3,
+          "x" : 15.0,
+          "y" : 16.0,
+          "width" : 2.0,
+          "height" : 3.0
+        }
+      ]
+    }
+  },
+  "response":{
+    "name":"SendHapticDataResponse",
+    "correlationID":192
+  }
+}

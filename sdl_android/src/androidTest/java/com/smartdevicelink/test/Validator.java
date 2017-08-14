@@ -40,6 +40,7 @@ import com.smartdevicelink.proxy.rpc.SdlMsgVersion;
 import com.smartdevicelink.proxy.rpc.SingleTireStatus;
 import com.smartdevicelink.proxy.rpc.SoftButton;
 import com.smartdevicelink.proxy.rpc.SoftButtonCapabilities;
+import com.smartdevicelink.proxy.rpc.SpatialParams;
 import com.smartdevicelink.proxy.rpc.StartTime;
 import com.smartdevicelink.proxy.rpc.TTSChunk;
 import com.smartdevicelink.proxy.rpc.TextField;
@@ -1576,6 +1577,61 @@ public class Validator{
             return false;
         }
         
+        return true;
+    }
+
+    public static boolean validateSpatialParam(SpatialParams item1, SpatialParams item2) {
+        if (item1 == null) {
+            return (item2 == null);
+        }
+        if (item2 == null) {
+            return false;
+        }
+
+        if (!item1.getId().equals(item2.getId())) {
+            return false;
+        }
+
+        if (!item1.getX().equals(item2.getX())) {
+            return false;
+        }
+
+        if (!item1.getY().equals(item2.getY())) {
+            return false;
+        }
+
+        if (!item1.getWidth().equals(item2.getWidth())) {
+            return false;
+        }
+
+        if (!item1.getHeight().equals(item2.getHeight())) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public static boolean validateSpatialParams(List<SpatialParams> list1,
+            List<SpatialParams> list2) {
+        if (list1 == null) {
+            return (list2 == null);
+        }
+        if (list2 == null) {
+            return false;
+        }
+
+        Iterator<SpatialParams> iterator1 = list1.iterator();
+        Iterator<SpatialParams> iterator2 = list2.iterator();
+
+        while(iterator1.hasNext() && iterator2.hasNext()){
+            SpatialParams params1 = iterator1.next();
+            SpatialParams params2 = iterator2.next();
+
+            if (!validateSpatialParam(params1, params2)) {
+                return false;
+            }
+        }
+
         return true;
     }
 }
