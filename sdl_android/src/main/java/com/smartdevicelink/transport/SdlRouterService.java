@@ -623,7 +623,7 @@ public class SdlRouterService extends Service{
 			                	service.tcpTransport = null;
 			                }
 		                }else{
-			                service.tcpTransport = new MultiplexTcpTransport(port, ipAddress, true, service.tcpHandler);
+			                service.tcpTransport = new MultiplexTcpTransport(port, ipAddress, true, service.tcpHandler, service);
 			                service.tcpTransport.start();
 		                }
 	                	break;

@@ -32,6 +32,13 @@
 
 package com.smartdevicelink.transport;
 
+import android.annotation.TargetApi;
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -65,15 +72,20 @@ public class MultiplexTcpTransport extends MultiplexBaseTransport {
 	private OutputStream mOutputStream = null;
 	private MultiplexTcpTransport.TcpTransportThread mThread = null;
 	private WriterThread writerThread;
+	private Network mWifiOnlyNetwork;  // only used on Android 5 and later
+	private final Object mNetworkChangeLock = new Object();
 
 
-	public MultiplexTcpTransport(int port, String ipAddress, boolean autoReconnect, Handler handler) {
+	public MultiplexTcpTransport(int port, String ipAddress, boolean autoReconnect, Handler handler, Context context) {
 		super(handler, TransportType.TCP);
 		this.ipAddress = ipAddress;
 		this.port = port;
         connectedDeviceAddress = ipAddress + ":" + port;
 		this.autoReconnect = autoReconnect;
 		setState(STATE_NONE);
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+			initNetwork(context);
+		}
 	}
 
 	public synchronized void start(){
@@ -215,6 +227,16 @@ public class MultiplexTcpTransport extends MultiplexBaseTransport {
 
 						logInfo(String.format("TCPTransport.connect: Socket is closed. Trying to connect to %s", getAddress()));
 						mSocket = new Socket();
+						if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+							// Bind the socket to Wi-Fi only network. This is required in the case a head unit
+							// provides no Internet connectivity over Wi-Fi. (Without the binding, Android 5+
+							// will initiate a connection over mobile network in such case.)
+							synchronized (mNetworkChangeLock) {
+								if (mWifiOnlyNetwork != null) {
+									mWifiOnlyNetwork.bindSocket(mSocket);
+								}
+							}
+						}
 						mSocket.connect(new InetSocketAddress(ipAddress, port));
 						mOutputStream = mSocket.getOutputStream();
 						mInputStream = mSocket.getInputStream();
@@ -405,5 +427,35 @@ public class MultiplexTcpTransport extends MultiplexBaseTransport {
 				}
 			}
 		}
+	}
+
+	@TargetApi(Build.VERSION_CODES.LOLLIPOP)
+	private void initNetwork(Context context) {
+		ConnectivityManager connMan = (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkRequest.Builder requestBuilder = new NetworkRequest.Builder();
+		requestBuilder.addTransportType(NetworkCapabilities.TRANSPORT_WIFI);
+		// requires android.permission.ACCESS_NETWORK_STATE
+		connMan.registerNetworkCallback(requestBuilder.build(), new ConnectivityManager.NetworkCallback() {
+			@Override
+			public void onAvailable(Network network) {
+				synchronized (mNetworkChangeLock) {
+					mWifiOnlyNetwork = network;
+				}
+			}
+
+			@Override
+			public void onLosing(Network network, int maxMsToLive) {
+				synchronized (mNetworkChangeLock) {
+					mWifiOnlyNetwork = null;
+				}
+			}
+
+			@Override
+			public void onLost(Network network) {
+				synchronized (mNetworkChangeLock) {
+					mWifiOnlyNetwork = null;
+				}
+			}
+		});
 	}
 }
