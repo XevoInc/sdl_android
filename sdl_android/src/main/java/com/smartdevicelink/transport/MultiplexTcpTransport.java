@@ -69,6 +69,7 @@ public class MultiplexTcpTransport extends MultiplexBaseTransport {
 
 	public MultiplexTcpTransport(int port, String ipAddress, boolean autoReconnect, Handler handler) {
 		super(handler, TransportType.TCP);
+		logInfo("<TRACE> MultiplexTcpTransport constructor");
 		this.ipAddress = ipAddress;
 		this.port = port;
         connectedDeviceAddress = ipAddress + ":" + port;
@@ -77,6 +78,7 @@ public class MultiplexTcpTransport extends MultiplexBaseTransport {
 	}
 
 	public synchronized void start(){
+		logInfo("<TRACE> MultiplexTcpTransport start() called");
 		if(getState() == STATE_NONE) {
 			synchronized (this) {
 				setState(STATE_CONNECTING);
@@ -201,6 +203,7 @@ public class MultiplexTcpTransport extends MultiplexBaseTransport {
 		 * @return true if connection established and false otherwise
 		 */
 		private boolean connect() {
+			logInfo("<TRACE> MultiplexTcpTransport.TcpTransportThread connect() called");
 			boolean bConnected;
 			int remainingRetry = RECONNECT_RETRY_COUNT;
 
@@ -215,6 +218,7 @@ public class MultiplexTcpTransport extends MultiplexBaseTransport {
 
 						logInfo(String.format("TCPTransport.connect: Socket is closed. Trying to connect to %s", getAddress()));
 						mSocket = new Socket();
+						logInfo("<TRACE> MultiplexTcpTransport.TcpTransportThread opening TCP socket");
 						mSocket.connect(new InetSocketAddress(ipAddress, port));
 						mOutputStream = mSocket.getOutputStream();
 						mInputStream = mSocket.getInputStream();

@@ -748,6 +748,7 @@ public class TransportBroker {
      * @param bundle
      */
     public void requestSecondaryTransportConnection(byte sessionId, Bundle bundle) {
+        Log.i(TAG, "<TRACE> TransportBroker requestSecondaryTransportConnection() called");
         Message msg = Message.obtain();
         msg.what = TransportConstants.ROUTER_REQUEST_SECONDARY_TRANSPORT_CONNECTION;
         msg.replyTo = this.clientMessenger;

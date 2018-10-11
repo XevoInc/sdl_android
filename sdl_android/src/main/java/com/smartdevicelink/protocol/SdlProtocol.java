@@ -682,6 +682,7 @@ public class SdlProtocol {
     }
 
     public void startService(SessionType serviceType, byte sessionID, boolean isEncrypted) {
+        Log.i(TAG, "<TRACE> SdlProtocol startService() called with type = " + serviceType.getName());
         final SdlPacket header = SdlPacketFactory.createStartSession(serviceType, 0x00, (byte)protocolVersion.getMajor(), sessionID, isEncrypted);
         if(SessionType.RPC.equals(serviceType)){
             if(connectedPrimaryTransport != null) {
@@ -773,10 +774,12 @@ public class SdlProtocol {
 
                 if(transportManager.isConnected(secondaryTransportType,null)){
                     //The transport is actually connected, however no service has been registered
+                    Log.i(TAG, "<TRACE> SdlProtocol startService() - secondary transport is already connected");
                     listenerList.add(secondaryListener);
                     registerSecondaryTransport(sessionID,transportManager.getTransportRecord(secondaryTransportType,null));
                 }else if(secondaryTransportParams != null && secondaryTransportParams.containsKey(secondaryTransportType)) {
                     //No acceptable secondary transport is connected, so first one must be connected
+                    Log.i(TAG, "<TRACE> SdlProtocol startService() - requesting secondary transport connection");
                     header.setTransportRecord(new TransportRecord(secondaryTransportType,""));
                     listenerList.add(secondaryListener);
                     transportManager.requestSecondaryTransportConnection(sessionID,secondaryTransportParams.get(secondaryTransportType));
@@ -1363,6 +1366,7 @@ public class SdlProtocol {
                 handleSecondaryTransportRegistration(packet.getTransportRecord(),false);
 
             } else if (frameInfo == FrameDataControlFrameType.TransportEventUpdate.getValue()) {
+                Log.i(TAG, "<TRACE> SdlProtocol handleControlFrame() - TransportEventUpdate frame received");
 
                 // Get TCP params
                 String ipAddr = (String) packet.getTag(ControlFrameTags.RPC.TransportEventUpdate.TCP_IP_ADDRESS);
@@ -1374,6 +1378,7 @@ public class SdlProtocol {
 
                 if(ipAddr != null && port != null) {
                     Bundle bundle = new Bundle();
+                    Log.i(TAG, "<TRACE> SdlProtocol handleControlFrame() - keeping {IP address, port} = {" + ipAddr + ", " + port + "}");
                     bundle.putString(ControlFrameTags.RPC.TransportEventUpdate.TCP_IP_ADDRESS, ipAddr);
                     bundle.putInt(ControlFrameTags.RPC.TransportEventUpdate.TCP_PORT, port);
                     bundle.putString(TransportConstants.TRANSPORT_TYPE, TransportType.TCP.name());

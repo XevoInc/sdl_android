@@ -617,6 +617,7 @@ public class SdlRouterService extends Service{
 
 		                String ipAddress = receivedBundle.getString(ControlFrameTags.RPC.TransportEventUpdate.TCP_IP_ADDRESS);
 		                int port = receivedBundle.getInt(ControlFrameTags.RPC.TransportEventUpdate.TCP_PORT);
+		                Log.i(TAG, "<TRACE> SdlRouterService.RouterHandler handleMessage() ROUTER_REQUEST_SECONDARY_TRANSPORT_CONNECTION event received, IP address=" + ipAddress + ", port=" + port);
 
 		                if(ipAddress != null){
 		                	if(service.tcpTransport != null){

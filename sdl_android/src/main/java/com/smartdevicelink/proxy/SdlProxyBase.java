@@ -4637,6 +4637,7 @@ public abstract class SdlProxyBase<proxyListenerType extends IProxyListenerBase>
 	 */
 	@TargetApi(19)
 	public void startRemoteDisplayStream(Context context, final Class<? extends SdlRemoteDisplay> remoteDisplay, final VideoStreamingParameters parameters, final boolean encrypted){
+		Log.i(TAG, "<TRACE> SdlProxyBase startRemoteDisplayStream() called");
 		if(protocolVersion!= null && protocolVersion.getMajor() >= 5 && !_systemCapabilityManager.isCapabilitySupported(SystemCapabilityType.VIDEO_STREAMING)){
 			Log.e(TAG, "Video streaming not supported on this module");
 			return;
@@ -4704,6 +4705,7 @@ public abstract class SdlProxyBase<proxyListenerType extends IProxyListenerBase>
      */
     @SuppressWarnings("unused")
 	private VideoStreamingParameters tryStartVideoStream(boolean isEncrypted, VideoStreamingParameters parameters) {
+        Log.i(TAG, "<TRACE> SdlProxyBase tryStartVideoStream() called");
         if (sdlSession == null) {
             DebugTool.logWarning("SdlSession is not created yet.");
             return null;
@@ -7424,6 +7426,7 @@ public abstract class SdlProxyBase<proxyListenerType extends IProxyListenerBase>
 		}
 
 		public void startVideoStreaming(Class<? extends SdlRemoteDisplay> remoteDisplayClass, VideoStreamingParameters parameters, boolean encrypted){
+			Log.i(TAG, "<TRACE> SdlProxyBase startVideoStreaming() called");
 			streamListener = startVideoStream(encrypted,parameters);
 			if(streamListener == null){
 				Log.e(TAG, "Error starting video service");
