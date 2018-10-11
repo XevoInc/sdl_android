@@ -621,6 +621,7 @@ public class SdlSession implements ISdlConnectionListener, IHeartbeatMonitorList
 	}
 	
 	public void startService (SessionType serviceType, byte sessionID, boolean isEncrypted) {
+		Log.i(TAG, "<TRACE> SdlSession startService() called, type = " + serviceType.getName());
 
 		if (_sdlConnection == null)
 			return;
@@ -641,6 +642,8 @@ public class SdlSession implements ISdlConnectionListener, IHeartbeatMonitorList
 		if (((serviceType != SessionType.NAV) && (serviceType != SessionType.PCM))) {
 			_sdlConnection.startService(serviceType, sessionID, isEncrypted);
 		} else {
+			Log.i(TAG, "<TRACE> SdlSession startService() - service type is NAV or PCM");
+
 			boolean allowed = isServiceAllowed(serviceType, TransportLevel.SECONDARY);
 
 			Intent sendIntent = createBroadcastIntent(this.applicationName, this.appId);
@@ -651,6 +654,7 @@ public class SdlSession implements ISdlConnectionListener, IHeartbeatMonitorList
 			sDetailedInfo += "isEncrypted: " + isEncrypted + "\n";
 			if ((secondarySdlConnection != null) && allowed) {
 				sDetailedInfo += "secondarySdlConnection startService" + "\n";
+				Log.i(TAG, "<TRACE> SdlSession startService() - starting service on secondary transport");
 				secondarySdlConnection.startService(serviceType, sessionID, isEncrypted);
 			} else {
 				if (allowed) {
@@ -1403,6 +1407,7 @@ public class SdlSession implements ISdlConnectionListener, IHeartbeatMonitorList
 
 	@Override
 	public void onTransportEventUpdate(byte sessionId, Map<String, Object> params) {
+		Log.i(TAG, "<TRACE> SdlSession onTransportEventUpdate() called");
 
 		Intent sendIntent = createBroadcastIntent(this.applicationName, this.appId);
 		String sDetailedInfo = "";
@@ -1511,6 +1516,7 @@ public class SdlSession implements ISdlConnectionListener, IHeartbeatMonitorList
 	}
 
 	private void startTCPTransport(String ipAddr, int port) {
+		Log.i(TAG, "<TRACE> SdlSession startTCPTransport() called");
 		TCPTransportConfig transportConfig = new TCPTransportConfig(port, ipAddr, true);
 		SdlConnection connection = new SdlConnection(transportConfig);
 		if (secondarySdlConnection != null) {

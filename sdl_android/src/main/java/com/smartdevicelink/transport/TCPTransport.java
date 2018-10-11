@@ -115,6 +115,7 @@ public class TCPTransport extends SdlTransport {
      */
     public TCPTransport(TCPTransportConfig tcpTransportConfig, ITransportListener transportListener) {
         super(transportListener);
+        logInfo("<TRACE> TCPTransport constructor");
         this.mConfig = tcpTransportConfig;
     }
 
@@ -170,6 +171,7 @@ public class TCPTransport extends SdlTransport {
      */
     @Override
     public void openConnection() throws SdlException {
+        logInfo("<TRACE> TCPTransport openConnection() called");
         TCPTransportState currentState = getCurrentState();
         logInfo(String.format("TCPTransport: openConnection requested. Current state is: %s", currentState.name()));
 
@@ -394,6 +396,7 @@ public class TCPTransport extends SdlTransport {
          * @return true if connection established and false otherwise
          */
         private boolean connect() {
+            logInfo("<TRACE> TCPTransport.TCPTransportThread connect() called");
             boolean bConnected;
             int remainingRetry = RECONNECT_RETRY_COUNT;
             
@@ -408,6 +411,7 @@ public class TCPTransport extends SdlTransport {
 
                         logInfo(String.format("TCPTransport.connect: Socket is closed. Trying to connect to %s", mConfig));
                         mSocket = new Socket();
+                        logInfo("<TRACE> TCPTransport.TcpTransportThread opening TCP socket");
                         mSocket.connect(new InetSocketAddress(mConfig.getIPAddress(), mConfig.getPort()));
                         mOutputStream = mSocket.getOutputStream();
                         mInputStream = mSocket.getInputStream();

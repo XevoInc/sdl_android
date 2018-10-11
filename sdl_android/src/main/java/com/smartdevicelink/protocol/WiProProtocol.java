@@ -568,6 +568,7 @@ public class WiProProtocol extends AbstractProtocol {
             	String reason = (String) packet.getTag(ControlFrameTags.RPC.RegisterSecondaryTransportNAK.REASON);
             	handleRegisterSecondaryTransportNAKed((byte) packet.sessionId, reason);
 			} else if (frameInfo == FrameDataControlFrameType.TransportEventUpdate.getValue()) {
+				DebugTool.logInfo("<TRACE> WiProProtocol handleControlFrame() - TransportEventUpdate frame received");
             	// Get TCP params
 				String ipAddr = (String) packet.getTag(ControlFrameTags.RPC.TransportEventUpdate.TCP_IP_ADDRESS);
 				Integer port = (Integer) packet.getTag(ControlFrameTags.RPC.TransportEventUpdate.TCP_PORT);
@@ -629,6 +630,7 @@ public class WiProProtocol extends AbstractProtocol {
 
 	@Override
 	public void StartProtocolService(SessionType sessionType, byte sessionID, boolean isEncrypted) {
+		DebugTool.logInfo("<TRACE> WiProProtocol StartProtocolService() called");
 		SdlPacket header = SdlPacketFactory.createStartSession(sessionType, 0x00, getMajorVersionByte(), sessionID, isEncrypted);
 		if(sessionType.equals(SessionType.NAV)){
 			SdlSession videoSession = sdlconn.findSessionById(sessionID);
