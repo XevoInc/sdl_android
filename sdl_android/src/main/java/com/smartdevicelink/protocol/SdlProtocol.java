@@ -1379,6 +1379,9 @@ public class SdlProtocol {
                     bundle.putString(TransportConstants.TRANSPORT_TYPE, TransportType.TCP.name());
                     secondaryTransportParams.put(TransportType.TCP, bundle);
 
+                    Log.i(TAG, "Initiating TCP secondary transport after receiving IP address and port number");
+                    transportManager.requestSecondaryTransportConnection((byte)-1, bundle);
+
                     //A new secondary transport just became available. Notify the developer.
                     notifyDevTransportListener();
                 }
