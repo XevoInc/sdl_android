@@ -210,6 +210,7 @@ public class TransportManager {
     }
 
     public void requestSecondaryTransportConnection(byte sessionId, Bundle params){
+        Log.i(TAG, "<TRACE> TransportManager requestSecondaryTransportConnection() called");
     	transport.requestSecondaryTransportConnection(sessionId, params);
     }
 
