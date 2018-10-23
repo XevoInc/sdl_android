@@ -275,6 +275,7 @@ public class SdlProtocol {
      * @param registered if the transport was successfully registered on
      */
     private void handleSecondaryTransportRegistration(TransportRecord transportRecord, boolean registered){
+        Log.i(TAG, "<TRACE> SdlProtocol handleSecondaryTransportRegistration() called with registered=" + registered);
         if(registered) {
             //Session has been registered on secondary transport
             Log.d(TAG, transportRecord.getType().toString() + " transport was registered!");
@@ -320,6 +321,7 @@ public class SdlProtocol {
     }
 
     private void onTransportsConnectedUpdate(List<TransportRecord> transports){
+        Log.i(TAG, "<TRACE> SdlProtocol onTransportsConnectedUpdate() called");
         //Log.d(TAG, "Connected transport update");
 
         //Temporary: this logic should all be changed to handle multiple transports of the same type
@@ -356,9 +358,11 @@ public class SdlProtocol {
                 && iSdlProtocol!= null){
             // Check to see if there is a listener for a given transport.
             // If a listener exists, it can be assumed that the transport should be registered on
+            Log.i(TAG, "<TRACE> SdlProtocol onTransportsConnectedUpdate() - checking secondary transport listeners");
             for(TransportRecord record: transports){
                 if(secondaryTransportListeners.get(record.getType()) != null
                         && !secondaryTransportListeners.get(record.getType()).isEmpty()){
+                    Log.i(TAG, "<TRACE> SdlProtocol onTransportsConnectedUpdate() - initiate registerSecondaryTransport");
                     registerSecondaryTransport(iSdlProtocol.getSessionId(), record);
                 }
             }
@@ -676,12 +680,14 @@ public class SdlProtocol {
 
 
     private void registerSecondaryTransport(byte sessionId, TransportRecord transportRecord) {
+        Log.i(TAG, "<TRACE> SdlProtocol registerSecondaryTransport() called");
         SdlPacket header = SdlPacketFactory.createRegisterSecondaryTransport(sessionId, (byte)protocolVersion.getMajor());
         header.setTransportRecord(transportRecord);
         handlePacketToSend(header);
     }
 
     public void startService(SessionType serviceType, byte sessionID, boolean isEncrypted) {
+        Log.i(TAG, "<TRACE> SdlProtocol startService() called with type = " + serviceType.getName());
         final SdlPacket header = SdlPacketFactory.createStartSession(serviceType, 0x00, (byte)protocolVersion.getMajor(), sessionID, isEncrypted);
         if(SessionType.RPC.equals(serviceType)){
             if(connectedPrimaryTransport != null) {
@@ -734,6 +740,7 @@ public class SdlProtocol {
                         && activeTransports.get(serviceType).getType() !=null
                         && activeTransports.get(serviceType).getType().equals(secondaryTransportType)){
                     // Transport is already active and accepted
+                    Log.i(TAG, "<TRACE> SdlProtocol startService() - secondary transport is already registered");
                     header.setTransportRecord(activeTransports.get(serviceType));
                     handlePacketToSend(header);
                     return;
@@ -773,10 +780,12 @@ public class SdlProtocol {
 
                 if(transportManager.isConnected(secondaryTransportType,null)){
                     //The transport is actually connected, however no service has been registered
+                    Log.i(TAG, "<TRACE> SdlProtocol startService() - waiting for registration to complete");
                     listenerList.add(secondaryListener);
                     registerSecondaryTransport(sessionID,transportManager.getTransportRecord(secondaryTransportType,null));
                 }else if(secondaryTransportParams != null && secondaryTransportParams.containsKey(secondaryTransportType)) {
                     //No acceptable secondary transport is connected, so first one must be connected
+                    Log.i(TAG, "<TRACE> SdlProtocol startService() - requesting secondary transport connection");
                     header.setTransportRecord(new TransportRecord(secondaryTransportType,""));
                     listenerList.add(secondaryListener);
                     transportManager.requestSecondaryTransportConnection(sessionID,secondaryTransportParams.get(secondaryTransportType));
@@ -1363,6 +1372,7 @@ public class SdlProtocol {
                 handleSecondaryTransportRegistration(packet.getTransportRecord(),false);
 
             } else if (frameInfo == FrameDataControlFrameType.TransportEventUpdate.getValue()) {
+                Log.i(TAG, "<TRACE> SdlProtocol handleControlFrame() - TransportEventUpdate frame received");
 
                 // Get TCP params
                 String ipAddr = (String) packet.getTag(ControlFrameTags.RPC.TransportEventUpdate.TCP_IP_ADDRESS);
@@ -1374,6 +1384,7 @@ public class SdlProtocol {
 
                 if(ipAddr != null && port != null) {
                     Bundle bundle = new Bundle();
+                    Log.i(TAG, "<TRACE> SdlProtocol handleControlFrame() - keeping {IP address, port} = {" + ipAddr + ", " + port + "}");
                     bundle.putString(ControlFrameTags.RPC.TransportEventUpdate.TCP_IP_ADDRESS, ipAddr);
                     bundle.putInt(ControlFrameTags.RPC.TransportEventUpdate.TCP_PORT, port);
                     bundle.putString(TransportConstants.TRANSPORT_TYPE, TransportType.TCP.name());
