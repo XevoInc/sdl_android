@@ -131,6 +131,17 @@ public class SdlProtocol {
     Map<TransportType, Bundle> secondaryTransportParams;
     TransportRecord connectedPrimaryTransport;
 
+    private final class SecondaryTransportState {
+        private static final int NOT_AVAILABLE = 0; // secondary transport is not initiated yet, or an error occurred during previous setup
+        private static final int REGISTERING = 1;   // secondary transport is in the process of connection and registration
+        private static final int REGISTERED = 2;    // secondary transport is successfully registered
+
+        int state = 0;
+        TransportRecord record = null; // record from Register Secondary Transport ACK / NAK packet; only valid when state is REGISTERED
+    }
+
+    private final Map<TransportType, SecondaryTransportState> secondaryTransportStateMap = new HashMap<>();
+
 
     @SuppressWarnings("ConstantConditions")
     public SdlProtocol(@NonNull ISdlProtocol iSdlProtocol, @NonNull MultiplexTransportConfig config) {
@@ -144,6 +155,11 @@ public class SdlProtocol {
         this.requestedSecondaryTransports = this.transportConfig.getSecondaryTransports();
         this.requiresHighBandwidth = this.transportConfig.requiresHighBandwidth();
         this.transportManager = new TransportManager(transportConfig, transportEventListener);
+
+        secondaryTransportStateMap.put(TransportType.MULTIPLEX, new SecondaryTransportState());
+        secondaryTransportStateMap.put(TransportType.BLUETOOTH, new SecondaryTransportState());
+        secondaryTransportStateMap.put(TransportType.TCP, new SecondaryTransportState());
+        secondaryTransportStateMap.put(TransportType.USB, new SecondaryTransportState());
 
 
         mtus.put(SessionType.RPC, (long) (V1_V2_MTU_SIZE - headerSize));
@@ -299,8 +315,17 @@ public class SdlProtocol {
                     }
                 }
             }
+            synchronized (secondaryTransportStateMap) {
+                SecondaryTransportState state = secondaryTransportStateMap.get(transportRecord.getType());
+                state.state = SecondaryTransportState.REGISTERED;
+                state.record = transportRecord;
+            }
         }else{
             Log.d(TAG, transportRecord.toString() + " transport was NOT registered!");
+            synchronized (secondaryTransportStateMap) {
+                SecondaryTransportState state = secondaryTransportStateMap.get(transportRecord.getType());
+                state.state = SecondaryTransportState.NOT_AVAILABLE;
+            }
         }
         //Notify any listeners for this secondary transport
         List<ISecondaryTransportListener> listenerList = secondaryTransportListeners.remove(transportRecord.getType());
@@ -309,7 +334,7 @@ public class SdlProtocol {
                 if(registered) {
                     listener.onConnectionSuccess(transportRecord);
                 }else{
-                    listener.onConnectionFailure();
+                    listener.onConnectionFailure(transportRecord);
                 }
             }
         }
@@ -743,12 +768,6 @@ public class SdlProtocol {
 
                 //If the secondary transport isn't connected yet that will have to be performed first
 
-                List<ISecondaryTransportListener> listenerList = secondaryTransportListeners.get(secondaryTransportType);
-                if(listenerList == null){
-                    listenerList = new ArrayList<>();
-                    secondaryTransportListeners.put(secondaryTransportType, listenerList);
-                }
-
                 //Check to see if the primary transport can also be used as a backup
                 final boolean primaryTransportBackup = transportPriorityForServiceMap.get(serviceType).contains(PRIMARY_TRANSPORT_ID);
 
@@ -760,7 +779,7 @@ public class SdlProtocol {
                     }
 
                     @Override
-                    public void onConnectionFailure() {
+                    public void onConnectionFailure(TransportRecord transportRecord) {
                         if(primaryTransportBackup) {
                             // Primary is also supported as backup
                             header.setTransportRecord(connectedPrimaryTransport);
@@ -771,22 +790,33 @@ public class SdlProtocol {
                     }
                 };
 
-                if(transportManager.isConnected(secondaryTransportType,null)){
-                    //The transport is actually connected, however no service has been registered
-                    listenerList.add(secondaryListener);
-                    registerSecondaryTransport(sessionID,transportManager.getTransportRecord(secondaryTransportType,null));
-                }else if(secondaryTransportParams != null && secondaryTransportParams.containsKey(secondaryTransportType)) {
-                    //No acceptable secondary transport is connected, so first one must be connected
-                    header.setTransportRecord(new TransportRecord(secondaryTransportType,""));
-                    listenerList.add(secondaryListener);
-                    transportManager.requestSecondaryTransportConnection(sessionID,secondaryTransportParams.get(secondaryTransportType));
-                }else{
-                    Log.w(TAG, "No params to connect to secondary transport");
-                    //Unable to register or start a secondary connection. Use the callback in case
-                    //there is a chance to use the primary transport for this service.
-                    secondaryListener.onConnectionFailure();
-                }
+                // prevent the map being updated while we run this block
+                synchronized (secondaryTransportStateMap) {
+                    SecondaryTransportState state = secondaryTransportStateMap.get(secondaryTransportType);
+                    if (state.state == SecondaryTransportState.REGISTERED) {
+                        // secondary transport is already registered
+                        secondaryListener.onConnectionSuccess(state.record);
+                    } else if (state.state == SecondaryTransportState.REGISTERING) {
+                        // secondary transport is connecting or registering. Once completed, proceed with
+                        // sending Start Service frame
+                        addSecondaryTransportListener(secondaryTransportType, secondaryListener);
+                    } else {
+                        // Secondary transport is not available. See we can set up one.
+                        if (secondaryTransportParams != null && secondaryTransportParams.containsKey(secondaryTransportType)) {
+                            //No acceptable secondary transport is connected, so first one must be connected
+                            header.setTransportRecord(new TransportRecord(secondaryTransportType, ""));
+                            addSecondaryTransportListener(secondaryTransportType, secondaryListener);
+                            state.state = SecondaryTransportState.REGISTERING;
 
+                            transportManager.requestSecondaryTransportConnection(sessionID, secondaryTransportParams.get(secondaryTransportType));
+                        } else {
+                            Log.w(TAG, "No params to connect to secondary transport");
+                            //Unable to register or start a secondary connection. Use the callback in case
+                            //there is a chance to use the primary transport for this service.
+                            secondaryListener.onConnectionFailure(new TransportRecord(secondaryTransportType, ""));
+                        }
+                    }
+                }
             }
         }
     }
@@ -808,6 +838,15 @@ public class SdlProtocol {
                 handlePacketToSend(header);
             }
         }
+    }
+
+    private void addSecondaryTransportListener(TransportType secondaryTransportType, ISecondaryTransportListener listener) {
+        List<ISecondaryTransportListener> listenerList = secondaryTransportListeners.get(secondaryTransportType);
+        if(listenerList == null){
+            listenerList = new ArrayList<>();
+            secondaryTransportListeners.put(secondaryTransportType, listenerList);
+        }
+        listenerList.add(listener);
     }
 
     /* --------------------------------------------------------------------------------------------
@@ -1150,6 +1189,11 @@ public class SdlProtocol {
                 activeTransports.remove(SessionType.PCM);
             }
 
+            synchronized (secondaryTransportStateMap) {
+                SecondaryTransportState state = secondaryTransportStateMap.get(disconnectedTransport.getType());
+                state.state = SecondaryTransportState.NOT_AVAILABLE;
+            }
+
             if(disconnectedTransport.equals(getTransportForSession(SessionType.RPC))){
                 //transportTypes.remove(type);
                 boolean primaryTransportAvailable = false;
@@ -1380,6 +1424,18 @@ public class SdlProtocol {
                     secondaryTransportParams.put(TransportType.TCP, bundle);
 
                     Log.i(TAG, "Initiating TCP secondary transport after receiving IP address and port number");
+                    synchronized (secondaryTransportStateMap) {
+                        SecondaryTransportState state = secondaryTransportStateMap.get(TransportType.TCP);
+                        state.state = SecondaryTransportState.REGISTERING;
+                    }
+                    // add a dummy listener so that register secondary transport is initiated once connection set ups
+                    addSecondaryTransportListener(TransportType.TCP, new ISecondaryTransportListener() {
+                        @Override
+                        public void onConnectionSuccess(TransportRecord transportRecord) {}
+                        @Override
+                        public void onConnectionFailure(TransportRecord transportRecord) {}
+                    });
+
                     transportManager.requestSecondaryTransportConnection((byte)-1, bundle);
 
                     //A new secondary transport just became available. Notify the developer.
