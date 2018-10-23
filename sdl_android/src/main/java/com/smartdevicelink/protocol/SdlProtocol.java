@@ -275,6 +275,7 @@ public class SdlProtocol {
      * @param registered if the transport was successfully registered on
      */
     private void handleSecondaryTransportRegistration(TransportRecord transportRecord, boolean registered){
+        Log.i(TAG, "<TRACE> SdlProtocol handleSecondaryTransportRegistration() called with registered=" + registered);
         if(registered) {
             //Session has been registered on secondary transport
             Log.d(TAG, transportRecord.getType().toString() + " transport was registered!");
@@ -320,6 +321,7 @@ public class SdlProtocol {
     }
 
     private void onTransportsConnectedUpdate(List<TransportRecord> transports){
+        Log.i(TAG, "<TRACE> SdlProtocol onTransportsConnectedUpdate() called");
         //Log.d(TAG, "Connected transport update");
 
         //Temporary: this logic should all be changed to handle multiple transports of the same type
@@ -356,9 +358,11 @@ public class SdlProtocol {
                 && iSdlProtocol!= null){
             // Check to see if there is a listener for a given transport.
             // If a listener exists, it can be assumed that the transport should be registered on
+            Log.i(TAG, "<TRACE> SdlProtocol onTransportsConnectedUpdate() - checking secondary transport listeners");
             for(TransportRecord record: transports){
                 if(secondaryTransportListeners.get(record.getType()) != null
                         && !secondaryTransportListeners.get(record.getType()).isEmpty()){
+                    Log.i(TAG, "<TRACE> SdlProtocol onTransportsConnectedUpdate() - initiate registerSecondaryTransport");
                     registerSecondaryTransport(iSdlProtocol.getSessionId(), record);
                 }
             }
@@ -676,6 +680,7 @@ public class SdlProtocol {
 
 
     private void registerSecondaryTransport(byte sessionId, TransportRecord transportRecord) {
+        Log.i(TAG, "<TRACE> SdlProtocol registerSecondaryTransport() called");
         SdlPacket header = SdlPacketFactory.createRegisterSecondaryTransport(sessionId, (byte)protocolVersion.getMajor());
         header.setTransportRecord(transportRecord);
         handlePacketToSend(header);
