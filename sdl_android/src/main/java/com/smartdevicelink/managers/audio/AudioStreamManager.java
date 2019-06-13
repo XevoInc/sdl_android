@@ -499,17 +499,19 @@ public class AudioStreamManager extends BaseSubManager {
             }
             return;
         }
-        if(_decoder != null && _decoder.isInterrupt()){
+        if(_decoder != null){
             if( mDelayStartAudioHandler == null){
                 mDelayStartAudioHandler = new DelayStartAudioHandler();
             }
             boolean isDelayStart = mDelayStartAudioHandler.isStartAudioDelay(_decoder);
-            //Stop AS data
-            finish(null,true);
-            synchronized (queue) {
-                while (queue.size() > 0){
-                    queue.element().getAudioDecoder().stop();
-                    queue.remove();
+            if(_decoder.isInterrupt()){
+                //Stop AS data
+                finish(null,true);
+                synchronized (queue) {
+                    while (queue.size() > 0){
+                        queue.element().getAudioDecoder().stop();
+                        queue.remove();
+                    }
                 }
             }
             if(isDelayStart){
@@ -521,19 +523,17 @@ public class AudioStreamManager extends BaseSubManager {
                 @Override
                 public void run() {
                     synchronized (queue) {
-                        if(_decoder != null){
-                            queue.add(_decoder);
-                            if (queue.size() == 1) {
-                                _decoder.getAudioDecoder().start();
-                            }
-                        } else {
-                            if(queue.size() > 0){
-                                queue.element().getAudioDecoder().start();
-                            }
+                        if(queue.size() > 0){
+                            queue.element().getAudioDecoder().start();
                         }
                     }
                 }
             });
+            synchronized (queue) {
+                if(_decoder != null){
+                    queue.add(_decoder);
+                }
+            }
             mSendAudioStreamThread.start();
         } else {
             synchronized (queue) {
@@ -659,12 +659,15 @@ public class AudioStreamManager extends BaseSubManager {
                                                 handler.postDelayed(new Runnable() {
                                                     @Override
                                                     public void run() {
-                                                        finish(queue.element().getCompletionListener(),isSuccess);
                                                         synchronized (queue) {
-                                                            queue.remove();
-                                                        }
-                                                        if (queue.size() > 0) {
-                                                            startAudioStreamThread(null);
+                                                            if (queue.size() > 0) {
+                                                                finish(queue.poll().getCompletionListener(),isSuccess);
+                                                            } else {
+                                                                Log.e(TAG, "There is no element of the queue");
+                                                            }
+                                                            if (queue.size() > 0) {
+                                                                startAudioStreamThread(null);
+                                                            }
                                                         }
                                                     }
                                                 },lDelay);
@@ -758,19 +761,20 @@ public class AudioStreamManager extends BaseSubManager {
                             Log.e(TAG, "DelayStartAudioHandler() Runnable() mQueue size:0");
                             return;
                         }
-                        decoder = mQueue.element();
-                        mQueue.remove();
-                        if(decoder != null){
-                            if(decoder.isInterrupt()){
-                                Log.d(TAG, "delete request Queue:" + mQueue.size());
-                                while (mQueue.size() > 0){
-                                    mQueue.remove();
-                                }
-                            }
-                        }
+                        decoder = mQueue.poll();
                     }
                     if(decoder != null){
                         startAudioStreamThread(decoder);
+                    }
+                    synchronized (mQueue) {
+                        if(mQueue.size() > 0 && mSendAudioStreamThread != null) {
+                            Log.d(TAG, "remaining Queue:" + mQueue.size());
+                            synchronized (queue) {
+                                while (mQueue.size() > 0){
+                                    queue.add(mQueue.poll());
+                                }
+                            }
+                        }
                     }
                 }
             };
@@ -779,20 +783,31 @@ public class AudioStreamManager extends BaseSubManager {
             if(decoder == null){
                 return false;
             }
-            long lDelay = getDelayStartAudioTime();
-            if(lDelay == 0){
-                return false;
-            }
+            long lDelay = 0;
             if(decoder.isInterrupt()){
-                synchronized (mQueue) {
-                    if(mQueue.size() > 0){
-                        Log.d(TAG, "isStartAudioDelay() delete Queue:" + mQueue.size());
+                lDelay = getDelayStartAudioTime();
+                if(lDelay == 0){
+                    return false;
+                }
+                if(decoder.isInterrupt()){
+                    synchronized (mQueue) {
+                        if(mQueue.size() > 0){
+                            Log.d(TAG, "isStartAudioDelay() delete Queue:" + mQueue.size());
+                        }
+                        while (mQueue.size() > 0){
+                            mQueue.remove();
+                        }
                     }
-                    while (mQueue.size() > 0){
-                        mQueue.remove();
+                    mQueue.add(decoder);
+                }
+            } else{
+                synchronized (mQueue) {
+                    if(mQueue.size() == 0){
+                        return false;
+                    } else {
+                        mQueue.add(decoder);
                     }
                 }
-                mQueue.add(decoder);
             }
             if(!mIsPostSending){
                 postDelayed(mRunnable,lDelay);
